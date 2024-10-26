@@ -1,0 +1,10 @@
+[package]
+name = "train-dispatcher"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = "0.14.2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bevy_prototype_lyon = "0.12"
