@@ -1,0 +1,175 @@
+{
+  "tracks": [
+    {
+      "id": 0,
+      "paths": [
+        {
+          "id": 0,
+          "coordinates": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "mode": "regular",
+          "switch_id": null
+        },
+        {
+          "id": 1,
+          "coordinates": [
+            [
+              50.0,
+              0.0
+            ]
+          ],
+          "mode": "switch",
+          "switch_id": 0
+        },
+        {
+          "id": 2,
+          "coordinates": [
+            [
+              75.0,
+              0.0
+            ]
+          ],
+          "mode": "switch",
+          "switch_id": 0
+        },
+        {
+          "id": 3,
+          "coordinates": [
+            [
+              100.0,
+              0.0
+            ]
+          ],
+          "mode": "regular",
+          "switch_id": null
+        },
+        {
+          "id": 4,
+          "coordinates": [
+            [
+              100.0,
+              100.0
+            ]
+          ],
+          "mode": "regular",
+          "switch_id": 0
+        },
+        {
+          "id": 5,
+          "coordinates": [
+            [
+              0.0,
+              100.0
+            ]
+          ],
+          "mode": "regular",
+          "switch_id": 0
+        },
+        {
+          "id": 6,
+          "coordinates": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "mode": "regular",
+          "switch_id": 0
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "paths": [
+        {
+          "id": 0,
+          "coordinates": [
+            [
+              25.0,
+              25.0
+            ]
+          ],
+          "mode": "regular",
+          "switch_id": null
+        },
+        {
+          "id": 1,
+          "coordinates": [
+            [
+              75.0,
+              25.0
+            ]
+          ],
+          "mode": "switch",
+          "switch_id": 0
+        },
+        {
+          "id": 2,
+          "coordinates": [
+            [
+              75.0,
+              75.0
+            ]
+          ],
+          "mode": "regular",
+          "switch_id": null
+        },
+        {
+          "id": 3,
+          "coordinates": [
+            [
+              25.0,
+              75.0
+            ]
+          ],
+          "mode": "regular",
+          "switch_id": null
+        },
+        {
+          "id": 4,
+          "coordinates": [
+            [
+              25.0,
+              25.0
+            ]
+          ],
+          "mode": "regular",
+          "switch_id": null
+        }
+      ]
+    }
+  ],
+  "stoplights": [
+    {
+      "id": 0,
+      "name": "ST1",
+      "mode": "",
+      "coordinates": [
+        0.0,
+        25.0
+      ]
+    }
+  ],
+  "switches": [
+    {
+      "id": 0,
+      "name": "SW1",
+      "enter": [
+        50.0,
+        0.0
+      ],
+      "exit_primary": [
+        75.0,
+        0.0
+      ],
+      "exit_secondary": [
+        75.0,
+        25.0
+      ]
+    }
+  ]
+}
