@@ -1,140 +1,132 @@
-use bevy::prelude::*;
+use crate::components::{Config, Track, Train, TrainDirectionButton};
+use crate::utils::{get_track_center, load_config};
+use bevy::{
+    prelude::*,
+    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
+    transform::commands,
+};
 use bevy_prototype_lyon::prelude::*;
-use serde_json::from_str;
-use std::fs::read_to_string;
-
-use crate::components::*;
-
-fn compute_cumulative_distances(path: &Vec<Vec2>) -> Vec<f32> {
-    let mut cumulative_distances = Vec::with_capacity(path.len());
-    let mut total_distance = 0.0;
-    cumulative_distances.push(0.0); // Starting point
-
-    for i in 1..path.len() {
-        let segment_length = (path[i] - path[i - 1]).length();
-        total_distance += segment_length;
-        cumulative_distances.push(total_distance);
-    }
-
-    cumulative_distances
-}
 
 pub fn setup(mut commands: Commands) {
-    // Load track configuration
-    let config_data = read_to_string("config.json").expect("Unable to read config file");
-    let track_config: TrackConfig = from_str(&config_data).expect("Invalid configuration file");
+    let config = load_config("config.json");
 
-    // Convert track points to Vec<Vec2>
-    let track_points: Vec<Vec2> = track_config
-        .track_points
-        .iter()
-        .map(|&[x, y]| Vec2::new(x, y))
-        .collect();
+    spawn_tracks(&config, &mut commands);
+    spawn_switches(&config, &mut commands);
+    spawn_camera(&config, &mut commands);
+    spawn_train(&config, &mut commands);
+    spawn_control_panel(&config, &mut commands);
+}
 
-    // Create the track path
-    let mut path_builder = PathBuilder::new();
-    path_builder.move_to(track_points[0]);
-    for point in &track_points[1..] {
-        path_builder.line_to(*point);
+fn spawn_tracks(config: &Config, commands: &mut Commands) {
+    for track in &config.tracks {
+        let mut track_path_builder = PathBuilder::new();
+        let mut first_point_set = false;
+        for vec in &track.coordinates {
+            if !first_point_set {
+                track_path_builder.move_to(vec.clone());
+                first_point_set = true;
+            } else {
+                track_path_builder.line_to(vec.clone());
+            }
+        }
+        commands.spawn((
+            ShapeBundle {
+                path: GeometryBuilder::build_as(&track_path_builder.build()),
+                spatial: SpatialBundle {
+                    transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
+                    ..default()
+                },
+                ..default()
+            },
+            Stroke::new(Color::rgb(100.0, 100.0, 0.0), 2.0),
+        ));
     }
-    let track_path = path_builder.build();
-    let cumulative_distances = compute_cumulative_distances(&track_points);
+}
 
-    // Calculate track bounds
-    let mut min_x = f32::MAX;
-    let mut max_x = f32::MIN;
-    let mut min_y = f32::MAX;
-    let mut max_y = f32::MIN;
-
-    for point in &track_points {
-        if point.x < min_x {
-            min_x = point.x;
+fn spawn_switches(config: &Config, commands: &mut Commands) {
+    for switch in &config.switches {
+        let mut switch_path_builder = PathBuilder::new();
+        for exit in &switch.exits {
+            switch_path_builder.move_to(Vec2::new(switch.enter.x, switch.enter.y));
+            switch_path_builder.line_to(Vec2::new(exit.x, exit.y));
         }
-        if point.x > max_x {
-            max_x = point.x;
-        }
-        if point.y < min_y {
-            min_y = point.y;
-        }
-        if point.y > max_y {
-            max_y = point.y;
-        }
+        commands.spawn((
+            ShapeBundle {
+                path: GeometryBuilder::build_as(&switch_path_builder.build()),
+                spatial: SpatialBundle {
+                    transform: Transform::from_translation(Vec3::new(0.0, 0.0, 1.0)),
+                    ..default()
+                },
+                ..default()
+            },
+            Stroke::new(Color::rgb(100.0, 0.0, 100.0), 3.0),
+        ));
     }
+}
 
-    let track_center = Vec2::new((min_x + max_x) / 2.0, (min_y + max_y) / 2.0);
-
-    // Camera
+fn spawn_camera(config: &Config, commands: &mut Commands) {
+    let track_center = get_track_center(config);
     commands.spawn(Camera2dBundle {
         transform: Transform::from_translation(track_center.extend(999.9)),
         ..default()
     });
+}
 
-    // Track
-    commands.spawn((
-        ShapeBundle {
-            path: GeometryBuilder::build_as(&track_path),
-            ..default()
-        },
-        Stroke::new(Color::rgb(128.0, 128.0, 128.0), 5.0),
-        Track {
-            path: track_points.clone(),
-        },
-    ));
-
-    // Train
+fn spawn_train(config: &Config, commands: &mut Commands) {
     commands.spawn((
         SpriteBundle {
             sprite: Sprite {
-                color: Color::rgb(1.0, 0.0, 0.0),
-                custom_size: Some(Vec2::new(30.0, 15.0)),
+                color: Color::rgb(100.0, 0.0, 0.0),
+                custom_size: Some(Vec2::new(15.0, 15.0)),
                 ..default()
             },
             transform: Transform {
-                translation: track_points[0].extend(1.0),
+                translation: Vec3::new(0.0, 0.0, 3.0),
                 ..default()
             },
             ..default()
         },
         Train {
-            speed: 100.0,
-            current_speed: 0.0,
-            acceleration: 50.0,
-            deceleration: 70.0,
-            stop_distance: 10.0,
-            path_index: 0,
-            path_progress: 0.0,
-            path: track_points.clone(),
-            cumulative_distances,
+            id: 0,
+            location: config.tracks[0].coordinates[0].clone(),
+            config: config.clone(),
+            ..default()
         },
     ));
 
-    let stoplight_position = Vec2::new(
-        track_config.stoplight_position[0],
-        track_config.stoplight_position[1],
-    );
-
-    // Stoplight Entity
     commands.spawn((
         SpriteBundle {
             sprite: Sprite {
-                color: Color::rgb(1.0, 0.0, 0.0), // Initially red
-                custom_size: Some(Vec2::new(20.0, 50.0)),
+                color: Color::rgb(100.0, 0.0, 0.0),
+                custom_size: Some(Vec2::new(15.0, 15.0)),
                 ..default()
             },
             transform: Transform {
-                translation: stoplight_position.extend(1.0),
+                translation: Vec3::new(0.0, 0.0, 3.0),
                 ..default()
             },
             ..default()
         },
-        Stoplight {
-            is_red: true,
-            position: stoplight_position,
+        Train {
+            id: 1,
+            location: config.tracks[0].coordinates[0].clone(),
+            config: config.clone(),
+            track_id: 1,
+            speed: 160.0,
+            direction: "backward".to_string(),
+            ..default()
         },
-        Name::new("Stoplight"),
     ));
 
-    // Controls Panel
+    // commands.spawn(MaterialMesh2dBundle {
+    //     mesh: Mesh2dHandle(Circle { radius: 50.0 }),
+    //     material: materials.add(color),
+    //     transform: Transform::from_xyz(0.0, 0.0, 0.0),
+    //     ..default()
+    // });
+}
+
+fn spawn_control_panel(config: &Config, commands: &mut Commands) {
     commands
         .spawn(NodeBundle {
             style: Style {
@@ -165,7 +157,7 @@ pub fn setup(mut commands: Commands) {
                         background_color: BackgroundColor(Color::srgb(0.8, 0.2, 0.2)), // Red color
                         ..default()
                     },
-                    StoplightButton,
+                    TrainDirectionButton,
                 ))
                 .with_children(|parent| {
                     parent.spawn(TextBundle {
